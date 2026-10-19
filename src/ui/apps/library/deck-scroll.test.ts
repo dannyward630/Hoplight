@@ -2,7 +2,12 @@
  * Deck-chip wheel navigation keeps every overflowing Library deck reachable with an ordinary mouse.
  */
 import { describe, expect, test } from "bun:test";
-import { attachDeckWheelListener, handleDeckWheel, scrollDecksOnWheel } from "./deck-scroll";
+import {
+  attachDeckWheelListener,
+  createDeckWheelRef,
+  handleDeckWheel,
+  scrollDecksOnWheel,
+} from "./deck-scroll";
 
 describe("scrollDecksOnWheel", () => {
   test("maps vertical wheel movement onto an overflowing deck row", () => {
@@ -81,5 +86,45 @@ describe("handleDeckWheel", () => {
     expect(registeredOptions).toEqual({ passive: false });
     detach();
     expect(removedListener).toBe(registeredListener);
+  });
+
+  test("leaves Ctrl-wheel available for browser zoom", () => {
+    const row = { scrollLeft: 0, scrollWidth: 900, clientWidth: 300 } as HTMLElement;
+    let canceled = false;
+    const event = {
+      deltaX: 0,
+      deltaY: 120,
+      deltaMode: 0,
+      ctrlKey: true,
+      preventDefault: () => { canceled = true; },
+    } as WheelEvent;
+
+    handleDeckWheel(row, event);
+    expect(row.scrollLeft).toBe(0);
+    expect(canceled).toBe(false);
+  });
+});
+
+describe("createDeckWheelRef", () => {
+  test("attaches when the row mounts and cleans up when it unmounts", () => {
+    let added: EventListenerOrEventListenerObject | undefined;
+    let removed: EventListenerOrEventListenerObject | undefined;
+    let options: AddEventListenerOptions | undefined;
+    const row = {
+      addEventListener: (_type: string, listener: EventListenerOrEventListenerObject, value?: boolean | AddEventListenerOptions) => {
+        added = listener;
+        options = typeof value === "object" ? value : undefined;
+      },
+      removeEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+        removed = listener;
+      },
+    } as unknown as HTMLDivElement;
+    const ref = createDeckWheelRef();
+
+    ref(row);
+    expect(added).toBeDefined();
+    expect(options).toEqual({ passive: false });
+    ref(null);
+    expect(removed).toBe(added);
   });
 });

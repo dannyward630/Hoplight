@@ -1,7 +1,7 @@
 /**
  * Library deck-chip wheel handling for reaching horizontally overflowed desktop decks.
  */
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 /**
  * Map wheel input to the horizontal overflow of the Library's deck-chip row.
@@ -47,6 +47,7 @@ export function handleDeckWheel(
   event: WheelEvent,
   lineHeightPx = DEFAULT_LINE_HEIGHT_PX,
 ): void {
+  if (event.ctrlKey) return;
   if (scrollDecksOnWheel(row, event.deltaX, event.deltaY, event.deltaMode, lineHeightPx)) {
     event.preventDefault();
   }
@@ -70,11 +71,16 @@ export function attachDeckWheelListener(row: HTMLElement): () => void {
   return () => row.removeEventListener("wheel", listener);
 }
 
+export function createDeckWheelRef(): (row: HTMLDivElement | null) => void {
+  let detach: (() => void) | null = null;
+  return (row) => {
+    detach?.();
+    detach = row ? attachDeckWheelListener(row) : null;
+  };
+}
+
 export function useDeckWheelRef() {
-  const rowRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const row = rowRef.current;
-    return row ? attachDeckWheelListener(row) : undefined;
-  }, []);
-  return rowRef;
+  const ref = useRef<((row: HTMLDivElement | null) => void) | null>(null);
+  if (!ref.current) ref.current = createDeckWheelRef();
+  return ref.current;
 }
