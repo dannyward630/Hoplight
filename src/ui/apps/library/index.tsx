@@ -11,6 +11,7 @@ import type { CSSProperties, DragEvent, JSX } from "react";
 import type { AppContext, StudioDamagedEntry, StudioEntitySummary, HoplightApp } from "../../app-contract";
 import { deckMeta, knownDecks } from "../../_shared/decks";
 import { deckCounts } from "./deck-core";
+import { handleDeckWheel } from "./deck-scroll";
 import {
   ImportOverlay,
   makeImportRunners,
@@ -322,7 +323,7 @@ function Library({ ctx }: { ctx: AppContext }): JSX.Element {
       <style>{allCss}</style>
       <DamageNotice entries={damaged} studioDir={studioDir} prefs={ctx.prefs} />
       <div className="wbbar">
-        <div className="deckchips" data-tour="decks">
+        <div className="deckchips" data-tour="decks" onWheel={handleDeckWheel}>
           {decks.map(({ kind, count }) => {
             const meta = deckMeta(kind);
             // While a search runs the chip counts MATCHES, so the row doubles as the cross-deck
